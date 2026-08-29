@@ -5,14 +5,21 @@ const { withNativewind } = require("nativewind/metro");
 
 const projectRoot = __dirname;
 const workspaceRoot = path.resolve(projectRoot, "../..");
-
-const config = getDefaultConfig(projectRoot);
-
-config.watchFolders = [workspaceRoot];
-config.resolver.nodeModulesPaths = [
+const nodeModulesPaths = [
   path.resolve(projectRoot, "node_modules"),
   path.resolve(workspaceRoot, "node_modules"),
 ];
+const externalNodeModulesPaths = nodeModulesPaths
+  .map((nodeModulesPath) => fs.realpathSync(nodeModulesPath))
+  .filter(
+    (nodeModulesPath) =>
+      !nodeModulesPath.startsWith(`${workspaceRoot}${path.sep}`),
+  );
+
+const config = getDefaultConfig(projectRoot);
+
+config.watchFolders = [workspaceRoot, ...externalNodeModulesPaths];
+config.resolver.nodeModulesPaths = nodeModulesPaths;
 config.resolver.unstable_enablePackageExports = true;
 
 const WORKSPACE_SCOPES = ["@bb/", "@get-bb/"];
