@@ -14,7 +14,11 @@ export function registerThreadCommands(
   program: Command,
   getUrl: () => string,
 ): void {
-  const thread = program.command("thread").description("Manage threads");
+  const thread = program
+    .command("thread")
+    .description(
+      "Manage threads; use `bb thread tell <id> <message>` for follow-up messages",
+    );
   registerWaitCommand(thread, getUrl);
   registerSpawnCommand(thread, getUrl);
   registerForkCommand(thread, getUrl);

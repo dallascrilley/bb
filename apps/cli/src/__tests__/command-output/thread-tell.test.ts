@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   setupCommandOutputTestEnvironment,
+  getHelpOutput,
   runCommand,
   stubServerApi,
 } from "../helpers/command-output-harness.js";
@@ -12,6 +13,15 @@ describe("bb thread tell command output", () => {
 
   const register: CommandRegistrar = (program) =>
     registerThreadCommands(program, () => "http://server");
+
+  it("bb thread help names tell for follow-up messages", async () => {
+    const helpOutput = await getHelpOutput(["thread"], register);
+
+    expect(helpOutput).toContain(
+      "`bb thread tell <id> <message>` for follow-up messages",
+    );
+    expect(helpOutput).not.toContain("bb thread send");
+  });
 
   it("bb thread tell --json prints the raw response plus thread id", async () => {
     const post = vi.fn(async () => ({ ok: true, delivery: "sent" }));
