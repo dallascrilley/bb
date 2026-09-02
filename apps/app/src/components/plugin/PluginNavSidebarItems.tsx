@@ -146,7 +146,7 @@ export function PluginNavSidebarItems({
         pluginId: BUILTIN_NAV_ROW_PLUGIN_ID,
         id: "tools",
         title: "Plugins",
-        icon: "ElectricPlugs",
+        icon: "Blocks",
         routePath: getPluginsRoutePath(),
       },
       {
