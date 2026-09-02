@@ -134,6 +134,8 @@ the SPA + `/api` + `/ws` — for plugins that proxy or relay traffic back to
 the server itself (the builtin connect plugin's tunnel is the canonical
 user). **Bind-gated** like `bb.sdk`: reading it before the server is
 listening throws, so prefer reading it from handlers, services, and timers.
+`bb.server.experimental_appUrl` gives the operator-configured public app URL,
+or `null` when `BB_APP_URL` is empty. It is not bind-gated.
 `bb.server.experimental_dataDir` gives the exact server data directory for a
 migration from BB-managed files. Do not write plugin state there. Use
 `bb.storage` for plugin-owned state.

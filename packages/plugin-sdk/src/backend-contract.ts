@@ -5,6 +5,7 @@ import type {
   Environment,
   Host,
   PermissionMode,
+  PendingInteraction,
   Project,
   PromptInput,
   ProviderErrorInfo,
@@ -261,6 +262,11 @@ export interface PluginThreadEventPayloads {
   "thread.archived": { thread: ThreadResponse };
   /** Fired after a thread is soft-deleted. */
   "thread.deleted": { thread: ThreadResponse };
+  /** Fired after a pending interaction row is committed. */
+  "interaction.pending": {
+    thread: ThreadResponse;
+    interaction: PendingInteraction;
+  };
   /**
    * Fired after a dispatch attempt is queued as a row — by a `message.dispatch`
    * hook's `wait` decision, by a `sendAt` in the future, or by a core wait (the
@@ -1411,6 +1417,12 @@ export interface PluginEvents {
 // ---------------------------------------------------------------------------
 
 export interface PluginServerApi {
+  /**
+   * The operator-configured public app URL from `BB_APP_URL`, or `null` when
+   * the operator has not configured one. This value is not bind-gated.
+   */
+  readonly experimental_appUrl: string | null;
+
   /**
    * This BB server's own loopback base URL (e.g. "http://127.0.0.1:38886"),
    * which serves the SPA + /api + /ws. For plugins that proxy or relay

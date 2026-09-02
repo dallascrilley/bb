@@ -417,6 +417,10 @@ export interface CreateFakePluginHostOptions {
   /** Defaults to "test-plugin". */
   pluginId?: string;
   /**
+   * Value served by `bb.server.experimental_appUrl`. Defaults to `null`.
+   */
+  appUrl?: string | null;
+  /**
    * Value served by `bb.server.loopbackBaseUrl` (always bound here, like
    * `bb.sdk`). Defaults to "http://127.0.0.1:38886".
    */
@@ -1177,7 +1181,7 @@ function createFakePluginHostInternal(
       for (const [name, contractValue] of contractEntries) {
         if (!RPC_METHOD_PATTERN.test(name)) {
           throw new Error(
-            `invalid rpc method name "${name}" — use letters, digits, "-" and "_"`,
+            `invalid rpc method name "${name}" — use dot-separated segments with letters, digits, "-" and "_"`,
           );
         }
         const methodContract = readRpcMethodContract(name, contractValue);
@@ -1616,9 +1620,14 @@ function createFakePluginHostInternal(
   };
 
   // --- server ---
+  const appUrl = options.appUrl ?? null;
   const loopbackBaseUrl = options.loopbackBaseUrl ?? "http://127.0.0.1:38886";
   const dataDir = options.dataDir ?? "/tmp/bb-fake-data-dir";
   const server: PluginServerApi = {
+    get experimental_appUrl(): string | null {
+      assertLive();
+      return appUrl;
+    },
     get loopbackBaseUrl(): string {
       assertLive();
       return loopbackBaseUrl;
@@ -1645,6 +1654,7 @@ function createFakePluginHostInternal(
     "thread.failed": [],
     "thread.archived": [],
     "thread.deleted": [],
+    "interaction.pending": [],
     "message.queued": [],
     "message.dispatched": [],
     "turn.failed": [],
@@ -2034,6 +2044,8 @@ function createFakePluginHostInternal(
           "thread.failed": threadEventHandlers["thread.failed"].length,
           "thread.archived": threadEventHandlers["thread.archived"].length,
           "thread.deleted": threadEventHandlers["thread.deleted"].length,
+          "interaction.pending":
+            threadEventHandlers["interaction.pending"].length,
           "message.queued": threadEventHandlers["message.queued"].length,
           "message.dispatched":
             threadEventHandlers["message.dispatched"].length,

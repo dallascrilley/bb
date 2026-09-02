@@ -83,7 +83,8 @@ export const PLUGIN_HTTP_METHODS: ReadonlySet<string> = new Set([
 ]);
 
 // Rpc method names become URL path segments.
-export const RPC_METHOD_PATTERN = /^[a-zA-Z0-9_-]+$/;
+export const RPC_METHOD_PATTERN =
+  /^[a-zA-Z0-9_-]+(?:\.[a-zA-Z0-9_-]+)*$/;
 
 // Service/schedule names appear in status text and plugin_schedules rows.
 export const BACKGROUND_NAME_PATTERN = /^[a-zA-Z0-9_-]+$/;

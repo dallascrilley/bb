@@ -111,6 +111,39 @@ server URL (Tailscale Serve or `--server-bind-host 0.0.0.0`) with the same
 caveats as a browser. Platforms (iOS first) and what the phone cannot do are
 listed in [platform-support.md](platform-support.md).
 
+### Push notifications on a self-hosted server
+
+The built-in Push notifications plugin sends messages through Expo. A
+self-hosted server must reach `https://exp.host`. The server needs no Apple or
+Google key.
+
+An Expo push token lets its holder send a notification to one app installation.
+The token cannot read notifications. It cannot access the phone or authenticate
+to the bb server. Treat the token as private because a leak can cause unwanted
+notifications.
+
+The server sends a thread title and a short preview. Use these commands to
+manage device registrations and inspect the sender:
+
+```bash
+bb push-notifications list
+bb push-notifications add --token <expo-push-token> --platform ios --label <device-name>
+bb push-notifications remove <id>
+bb push-notifications status
+```
+
+Turn delivery off with `bb plugin disable push-notifications`. The plugin keeps
+registrations in its private storage. Enable the plugin to resume delivery.
+
+The `expoPushUrl` plugin setting changes the Expo endpoint. Use it only for a
+controlled test service or a compatible relay:
+
+```bash
+bb plugin config push-notifications set expoPushUrl <url>
+```
+
+The Expo request supports `HTTPS_PROXY` and `NO_PROXY`.
+
 ## Point the desktop app at another bb
 
 The desktop app's Server menu lists "This Mac", every bb connect server on the

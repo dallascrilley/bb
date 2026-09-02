@@ -2378,6 +2378,100 @@ describe("acp bridge", () => {
     expect(threadEventsOfType("thread/compacted")).toEqual([]);
   });
 
+  it("fails the compaction turn when the agent reports the failure in an end-turn message", async () => {
+    const { providerThreadId } = await startThread({
+      envVars: {
+        FAKE_ACP_COMPACT_AGENT_MESSAGE:
+          "Compaction failed: summary model rejected the request",
+      },
+    });
+
+    const turnId = sendTurnRequest("turn/start", providerThreadId, {
+      input: compactCommandInput(),
+    });
+    expect((await waitForResponse(turnId)).error).toBeUndefined();
+
+    const completed = await waitForTurnCompleted();
+    expect(completed).toMatchObject({
+      status: "failed",
+      error: {
+        message: "Compaction failed: summary model rejected the request",
+      },
+    });
+    expect(threadEventsOfType("thread/compacted")).toEqual([]);
+  });
+
+  it("completes a no-op compaction turn without reporting a compacted context", async () => {
+    const { providerThreadId } = await startThread({
+      envVars: {
+        FAKE_ACP_COMPACT_AGENT_MESSAGE:
+          "Compaction failed: Nothing to compact (session too small)",
+      },
+    });
+
+    const turnId = sendTurnRequest("turn/start", providerThreadId, {
+      input: compactCommandInput(),
+    });
+    expect((await waitForResponse(turnId)).error).toBeUndefined();
+
+    const completed = await waitForTurnCompleted();
+    expect(completed).toMatchObject({ status: "completed" });
+    expect(threadEventsOfType("thread/compacted")).toEqual([]);
+    expect(threadEventsOfType("provider/warning").at(-1)).toMatchObject({
+      category: "compaction-skipped",
+      summary: "Context compaction skipped",
+      details: "Compaction failed: Nothing to compact (session too small)",
+    });
+  });
+
+  it("keeps classifying a no-op compaction when the agent rewords its prose", async () => {
+    const { providerThreadId } = await startThread({
+      envVars: {
+        FAKE_ACP_COMPACT_AGENT_MESSAGE:
+          "compaction failed: nothing to compact — the session is still small",
+      },
+    });
+
+    const turnId = sendTurnRequest("turn/start", providerThreadId, {
+      input: compactCommandInput(),
+    });
+    expect((await waitForResponse(turnId)).error).toBeUndefined();
+
+    const completed = await waitForTurnCompleted();
+    expect(completed).toMatchObject({ status: "completed" });
+    expect(threadEventsOfType("thread/compacted")).toEqual([]);
+    expect(threadEventsOfType("provider/warning").at(-1)).toMatchObject({
+      category: "compaction-skipped",
+      summary: "Context compaction skipped",
+      details:
+        "compaction failed: nothing to compact — the session is still small",
+    });
+  });
+
+  it("fails the compaction turn when the failure report is reworded or preceded by other text", async () => {
+    const { providerThreadId } = await startThread({
+      envVars: {
+        FAKE_ACP_COMPACT_AGENT_MESSAGE:
+          "Tried shrinking the context.\nCompaction failed: session is locked by another compaction",
+      },
+    });
+
+    const turnId = sendTurnRequest("turn/start", providerThreadId, {
+      input: compactCommandInput(),
+    });
+    expect((await waitForResponse(turnId)).error).toBeUndefined();
+
+    const completed = await waitForTurnCompleted();
+    expect(completed).toMatchObject({
+      status: "failed",
+      error: {
+        message:
+          "Tried shrinking the context.\nCompaction failed: session is locked by another compaction",
+      },
+    });
+    expect(threadEventsOfType("thread/compacted")).toEqual([]);
+  });
+
   it("accepts turn input only after the prompt carrying it goes out", async () => {
     const { providerThreadId } = await startThread();
     const turnId = sendTurnRequest("turn/start", providerThreadId, {

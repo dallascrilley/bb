@@ -258,6 +258,17 @@ now, or when the orphan sweep clears a wait whose plugin is no longer running.
 - **The single server-wide lock.** One slow handler delays every dispatch in the
   server, up to its box.
 
+## `interaction.pending` (`bb.events.on`)
+
+**What it does.** This announcement fires after core commits a pending
+interaction row. It carries the public thread and pending interaction DTOs.
+Plugins can react without delaying or changing the interaction.
+
+**Audit before stabilizing.** Confirm that all plugins should receive provider
+and plugin interaction details. Confirm that the full interaction DTO remains
+the correct payload instead of an id that requires a fresh SDK read. Decide
+whether this event needs matching resolved, cancelled, or interrupted events.
+
 ## `message.queued` / `message.dispatched` / `turn.failed` (`bb.events.on`)
 
 **What it does.** Three announcements on the observe-only `bb.events.on`
@@ -648,6 +659,16 @@ stays, decide whether a bare path is the right shape or whether a plugin
 should get named, read-only accessors for the bb-managed files it may read —
 a path invites writes into bb's directory, which `bb.storage` exists to
 prevent.
+
+## `bb.server.experimental_appUrl`
+
+**What it does.** This value gives plugins the operator-configured public app
+URL from `BB_APP_URL`. It is `null` when the operator did not configure that
+value. Plugins can read it before the server starts to listen.
+
+**Audit before stabilizing.** Decide whether `BB_EXTERNAL_URL` or the bb
+connect URL should supply this value when `BB_APP_URL` is empty. Confirm that
+one public URL has clear behavior when a server has several access paths.
 
 ## Bridge record mode (`experimental_recordProviderChildIo` and `experimental_isProviderBridgeRecording`)
 
