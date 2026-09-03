@@ -1040,6 +1040,7 @@ describe("workspace provisioning", () => {
       baseBranch: "main",
       timeoutMs: 900000,
     });
+    const canonicalTargetPath = await fs.realpath(targetPath);
     const entries: string[] = [];
 
     await removeWorktree({
@@ -1050,7 +1051,7 @@ describe("workspace provisioning", () => {
     });
 
     expect(await fs.readFile(markerPath, "utf8")).toBe(
-      `${targetPath}\nhello\n`,
+      `${canonicalTargetPath}\nhello\n`,
     );
     expect(entries).toContain("teardown-started:Running .bb-env-teardown.sh");
     expect(entries).toContain("teardown-output-1:released external resource");

@@ -20,6 +20,7 @@ async function initRepo(): Promise<string> {
   await runGit(["config", "user.name", "BB Tests"], { cwd: repoPath });
   await runGit(["config", "user.email", "bb@example.com"], { cwd: repoPath });
   await runGit(["config", "core.autocrlf", "false"], { cwd: repoPath });
+  await runGit(["config", "core.excludesFile", ""], { cwd: repoPath });
   return repoPath;
 }
 

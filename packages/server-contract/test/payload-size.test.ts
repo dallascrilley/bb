@@ -59,28 +59,46 @@ describe("server-to-browser timeline payload sizes", () => {
       };
     });
 
-    expect(measurements).toEqual([
+    expect(
+      measurements.map(({ rowCount, full, legacyDelta, compactDelta }) => ({
+        rowCount,
+        fullJsonBytes: full.jsonBytes,
+        legacyDeltaJsonBytes: legacyDelta.jsonBytes,
+        compactDeltaJsonBytes: compactDelta.jsonBytes,
+      })),
+    ).toEqual([
       {
         rowCount: 1,
-        full: { gzipBytes: 216, jsonBytes: 629 },
-        legacyDelta: { gzipBytes: 239, jsonBytes: 677 },
-        compactDelta: { gzipBytes: 227, jsonBytes: 644 },
+        fullJsonBytes: 629,
+        legacyDeltaJsonBytes: 677,
+        compactDeltaJsonBytes: 644,
       },
       {
         rowCount: 20,
-        full: { gzipBytes: 552, jsonBytes: 6_627 },
-        legacyDelta: { gzipBytes: 297, jsonBytes: 1_060 },
-        compactDelta: { gzipBytes: 230, jsonBytes: 647 },
+        fullJsonBytes: 6_627,
+        legacyDeltaJsonBytes: 1_060,
+        compactDeltaJsonBytes: 647,
       },
       {
         rowCount: 100,
-        full: { gzipBytes: 1_868, jsonBytes: 31_989 },
-        legacyDelta: { gzipBytes: 471, jsonBytes: 2_662 },
-        compactDelta: { gzipBytes: 230, jsonBytes: 649 },
+        fullJsonBytes: 31_989,
+        legacyDeltaJsonBytes: 2_662,
+        compactDeltaJsonBytes: 649,
       },
     ]);
 
+    // Deflate output sizes vary across zlib implementations. Keep the stable
+    // JSON-size regression contract exact and assert only relative properties
+    // of compressed payloads.
     for (const measurement of measurements) {
+      for (const payload of [
+        measurement.full,
+        measurement.legacyDelta,
+        measurement.compactDelta,
+      ]) {
+        expect(payload.gzipBytes).toBeGreaterThan(0);
+        expect(payload.gzipBytes).toBeLessThan(payload.jsonBytes);
+      }
       expect(measurement.compactDelta.jsonBytes).toBeLessThanOrEqual(
         measurement.legacyDelta.jsonBytes,
       );

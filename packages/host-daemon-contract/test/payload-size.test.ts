@@ -73,23 +73,39 @@ describe("daemon-to-server event payload sizes", () => {
       };
     });
 
-    expect(measurements).toEqual([
+    expect(
+      measurements.map(({ eventCount, legacyEnvelope, grouped }) => ({
+        eventCount,
+        legacyJsonBytes: legacyEnvelope.jsonBytes,
+        groupedJsonBytes: grouped.jsonBytes,
+      })),
+    ).toEqual([
       {
         eventCount: 1,
-        legacyEnvelope: { gzipBytes: 194, jsonBytes: 413 },
-        grouped: { gzipBytes: 198, jsonBytes: 421 },
+        legacyJsonBytes: 413,
+        groupedJsonBytes: 421,
       },
       {
         eventCount: 10,
-        legacyEnvelope: { gzipBytes: 246, jsonBytes: 3_554 },
-        grouped: { gzipBytes: 247, jsonBytes: 3_049 },
+        legacyJsonBytes: 3_554,
+        groupedJsonBytes: 3_049,
       },
       {
         eventCount: 50,
-        legacyEnvelope: { gzipBytes: 406, jsonBytes: 17_554 },
-        grouped: { gzipBytes: 407, jsonBytes: 14_769 },
+        legacyJsonBytes: 17_554,
+        groupedJsonBytes: 14_769,
       },
     ]);
+
+    // Deflate output sizes vary across zlib implementations. Keep the stable
+    // JSON-size regression contract exact and verify only implementation-
+    // independent properties of the compressed measurements.
+    for (const measurement of measurements) {
+      for (const payload of [measurement.legacyEnvelope, measurement.grouped]) {
+        expect(payload.gzipBytes).toBeGreaterThan(0);
+        expect(payload.gzipBytes).toBeLessThan(payload.jsonBytes);
+      }
+    }
 
     for (const measurement of measurements.slice(1)) {
       expect(measurement.grouped.jsonBytes).toBeLessThan(

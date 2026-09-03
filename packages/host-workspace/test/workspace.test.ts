@@ -103,7 +103,7 @@ afterEach(async () => {
       .splice(0)
       .map((dir) => fs.rm(dir, { recursive: true, force: true })),
   );
-});
+}, 60_000);
 
 describe("Workspace", () => {
   it("reports clean, dirty, untracked-only, and mixed workspace states", async () => {
