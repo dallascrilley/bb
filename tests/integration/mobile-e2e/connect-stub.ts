@@ -15,10 +15,24 @@ const DEFAULT_CODE = "STUB-PAIR";
 const DEFAULT_HANDLE = "stub";
 const OTHER_HANDLE = "other";
 const DEFAULT_SESSION_TTL_MS = 60 * 60 * 1000;
-const DESKTOP_SESSION_COOKIE = "__Secure-bb-connect.desktop_session";
+const SECURE_DESKTOP_SESSION_COOKIE = "__Secure-bb-connect.desktop_session";
+const LOCAL_DESKTOP_SESSION_COOKIE = "bb-connect.desktop_session";
 const MACHINE_CREDENTIAL_HEADER = "x-bb-connect-machine";
 const GATE_AUTH_HEADER = "x-bb-gate-auth";
 const GATE_MACHINE_ID_HEADER = "x-bb-gate-machine-id";
+
+type StubProtocol = "http:" | "https:";
+
+function readStubProtocol(): StubProtocol {
+  const raw = (
+    process.env.BB_MOBILE_E2E_STUB_PROTOCOL ?? "https"
+  ).trim().toLowerCase();
+  if (raw === "http") return "http:";
+  if (raw === "https") return "https:";
+  throw new Error(
+    `Invalid BB_MOBILE_E2E_STUB_PROTOCOL: ${raw}; expected http or https`,
+  );
+}
 
 function readPort(name: string, fallback: number): number {
   const raw = process.env[name];
@@ -70,10 +84,15 @@ const sessionTtlMs = readPositiveInt(
 const certDir =
   process.env.BB_MOBILE_E2E_STUB_CERT_DIR ??
   path.join(os.homedir(), ".bb-mobile-e2e", "connect-stub-certs");
+const stubProtocol = readStubProtocol();
+const desktopSessionCookie =
+  stubProtocol === "https:"
+    ? SECURE_DESKTOP_SESSION_COOKIE
+    : LOCAL_DESKTOP_SESSION_COOKIE;
 
-const apexUrl = `https://localhost:${gatePort}`;
-const serverUrl = `https://${handle}.localhost:${gatePort}`;
-const otherServerUrl = `https://${OTHER_HANDLE}.localhost:${gatePort}`;
+const apexUrl = `${stubProtocol}//localhost:${gatePort}`;
+const serverUrl = `${stubProtocol}//${handle}.localhost:${gatePort}`;
+const otherServerUrl = `${stubProtocol}//${OTHER_HANDLE}.localhost:${gatePort}`;
 const cookieDomain = process.env.BB_MOBILE_E2E_COOKIE_DOMAIN ?? ".localhost";
 
 interface TlsMaterial {
@@ -335,7 +354,7 @@ function upstreamHeaders(
   machineId: string | null,
 ): http.OutgoingHttpHeaders {
   const headers: http.OutgoingHttpHeaders = {};
-  const publicOrigin = `https://${headerValue(req.headers.host) ?? ""}`;
+  const publicOrigin = `${stubProtocol}//${headerValue(req.headers.host) ?? ""}`;
   for (const [name, value] of Object.entries(req.headers)) {
     if (value === undefined) continue;
     const lower = name.toLowerCase();
@@ -421,7 +440,7 @@ function handleDesktopSession(
     cookie: {
       domain: cookieDomain,
       expiresAt: session.expiresAt,
-      name: DESKTOP_SESSION_COOKIE,
+      name: desktopSessionCookie,
       value: session.value,
     },
   });
@@ -537,7 +556,7 @@ async function handleRequest(
 ): Promise<void> {
   const url = new URL(
     req.url ?? "/",
-    `https://${req.headers.host ?? "localhost"}`,
+    `${stubProtocol}//${req.headers.host ?? "localhost"}`,
   );
   const pathname = url.pathname;
   if (pathname === "/api/connect/redeem-machine") {
@@ -569,7 +588,7 @@ async function handleRequest(
 
   const cookieHeader = headerValue(req.headers.cookie) ?? undefined;
   const session = activeSession(
-    parseCookie(cookieHeader, DESKTOP_SESSION_COOKIE),
+    parseCookie(cookieHeader, desktopSessionCookie),
   );
   trace(
     `${req.method ?? "GET"} ${url.host}${pathname} (${describeCookies(cookieHeader)}) → ${session ? "proxy" : "401 sign-in"}`,
@@ -589,11 +608,11 @@ function handleUpgrade(
 ): void {
   const url = new URL(
     req.url ?? "/",
-    `https://${req.headers.host ?? "localhost"}`,
+    `${stubProtocol}//${req.headers.host ?? "localhost"}`,
   );
   const cookieHeader = headerValue(req.headers.cookie) ?? undefined;
   const session = activeSession(
-    parseCookie(cookieHeader, DESKTOP_SESSION_COOKIE),
+    parseCookie(cookieHeader, desktopSessionCookie),
   );
   trace(
     `UPGRADE ${url.host}${url.pathname} (${describeCookies(cookieHeader)}) → ${session ? "proxy" : "401 sign-in"}`,
@@ -646,24 +665,32 @@ function handleUpgrade(
 }
 
 function main(): void {
-  const tls = ensureCertificates();
+  const tls = stubProtocol === "https:" ? ensureCertificates() : null;
   const simulator = process.env.BB_MOBILE_E2E_SIMULATOR;
-  if (simulator) installRootCertificate(simulator, tls.caPath);
+  if (simulator && tls !== null) installRootCertificate(simulator, tls.caPath);
 
-  const listeners: https.Server[] = [];
+  const listeners: http.Server[] = [];
   for (const host of ["127.0.0.1", "::1"]) {
-    const server = https.createServer(
-      { key: tls.key, cert: tls.cert },
-      (req, res) => {
-        handleRequest(req, res).catch((error: unknown) => {
-          process.stderr.write(
-            `connect-stub: handler error ${String(error)}\n`,
-          );
-          if (!res.headersSent) json(res, 500, { error: "internal" });
-          else res.end();
-        });
-      },
-    );
+    const requestHandler = (
+      req: http.IncomingMessage,
+      res: http.ServerResponse,
+    ): void => {
+      handleRequest(req, res).catch((error: unknown) => {
+        process.stderr.write(`connect-stub: handler error ${String(error)}\n`);
+        if (!res.headersSent) json(res, 500, { error: "internal" });
+        else res.end();
+      });
+    };
+    let server: http.Server;
+    if (stubProtocol === "https:") {
+      if (tls === null) throw new Error("HTTPS stub missing TLS material");
+      server = https.createServer(
+        { key: tls.key, cert: tls.cert },
+        requestHandler,
+      );
+    } else {
+      server = http.createServer(requestHandler);
+    }
     server.on("upgrade", handleUpgrade);
     server.on("error", (error) => {
       process.stderr.write(
@@ -708,13 +735,22 @@ function main(): void {
     pairingCode,
     upstreamUrl: upstreamUrl.origin,
     controlUrl: `http://127.0.0.1:${controlPort}`,
-    caPath: tls.caPath,
-    installRootCert: `xcrun simctl keychain booted add-root-cert ${tls.caPath}`,
+    ...(tls === null
+      ? {}
+      : {
+          caPath: tls.caPath,
+          installRootCert: `xcrun simctl keychain booted add-root-cert ${tls.caPath}`,
+        }),
   };
+  const trustMessage =
+    tls === null
+      ? ""
+      : `\n  trust the CA in a simulator once: ${details.installRootCert}`;
   process.stdout.write(`${JSON.stringify(details)}\n`);
   process.stderr.write(
     `mobile-e2e connect stub ready: apex ${apexUrl}, gate ${serverUrl} → ${upstreamUrl.origin} (code ${pairingCode}; control http://127.0.0.1:${controlPort}/__stub/*; Ctrl-C to stop)\n` +
-      `  trust the CA in a simulator once: ${details.installRootCert}\n`,
+      trustMessage +
+      "\n",
   );
 }
 
