@@ -98,8 +98,8 @@ describe("daemon-to-server event payload sizes", () => {
     ]);
 
     // Deflate output sizes vary across zlib implementations. Keep the stable
-    // JSON-size regression contract exact and verify only implementation-
-    // independent properties of the compressed measurements.
+    // JSON-size regression contract exact and verify compressed-size bounds
+    // that remain portable across the supported zlib implementations.
     for (const measurement of measurements) {
       for (const payload of [measurement.legacyEnvelope, measurement.grouped]) {
         expect(payload.gzipBytes).toBeGreaterThan(0);

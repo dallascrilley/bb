@@ -44,6 +44,10 @@ const externalNodeModulesPaths = nodeModulesPaths
 config.watchFolders = [workspaceRoot, ...externalNodeModulesPaths];
 ```
 
+This excerpt shows the core mechanism. The shipped configuration also skips
+`realpathSync` for missing dependency roots, compares against the canonical
+workspace root, and deduplicates physical watch roots.
+
 Keep the logical paths in `config.resolver.nodeModulesPaths`; only the watch roots need the physical external locations.
 
 ## Why it works

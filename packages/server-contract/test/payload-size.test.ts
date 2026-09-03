@@ -88,8 +88,8 @@ describe("server-to-browser timeline payload sizes", () => {
     ]);
 
     // Deflate output sizes vary across zlib implementations. Keep the stable
-    // JSON-size regression contract exact and assert only implementation-
-    // independent properties of compressed payloads.
+    // JSON-size regression contract exact and verify compressed-size bounds
+    // that remain portable across the supported zlib implementations.
     for (const measurement of measurements) {
       for (const payload of [
         measurement.full,
@@ -101,6 +101,9 @@ describe("server-to-browser timeline payload sizes", () => {
       }
       expect(measurement.compactDelta.jsonBytes).toBeLessThanOrEqual(
         measurement.legacyDelta.jsonBytes,
+      );
+      expect(measurement.compactDelta.gzipBytes).toBeLessThanOrEqual(
+        measurement.legacyDelta.gzipBytes * 1.1,
       );
     }
   });
