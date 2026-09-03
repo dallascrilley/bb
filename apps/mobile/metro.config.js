@@ -5,16 +5,26 @@ const { withNativewind } = require("nativewind/metro");
 
 const projectRoot = __dirname;
 const workspaceRoot = path.resolve(projectRoot, "../..");
+const physicalWorkspaceRoot = fs.realpathSync(workspaceRoot);
 const nodeModulesPaths = [
   path.resolve(projectRoot, "node_modules"),
   path.resolve(workspaceRoot, "node_modules"),
 ];
-const externalNodeModulesPaths = nodeModulesPaths
-  .map((nodeModulesPath) => fs.realpathSync(nodeModulesPath))
-  .filter(
-    (nodeModulesPath) =>
-      !nodeModulesPath.startsWith(`${workspaceRoot}${path.sep}`),
-  );
+const externalNodeModulesPaths = [
+  ...new Set(
+    nodeModulesPaths
+      .map((nodeModulesPath) =>
+        fs.existsSync(nodeModulesPath)
+          ? fs.realpathSync(nodeModulesPath)
+          : nodeModulesPath,
+      )
+      .filter(
+        (nodeModulesPath) =>
+          !nodeModulesPath.startsWith(`${workspaceRoot}${path.sep}`) &&
+          !nodeModulesPath.startsWith(`${physicalWorkspaceRoot}${path.sep}`),
+      ),
+  ),
+];
 
 const config = getDefaultConfig(projectRoot);
 
