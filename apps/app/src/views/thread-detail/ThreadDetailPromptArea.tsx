@@ -34,7 +34,10 @@ import type {
   TimelineWorkflowWorkRow,
 } from "@bb/server-contract";
 import type { ChildThreadPendingAttention } from "@/hooks/queries/child-thread-pending-interactions";
-import { ThreadPendingInteractionBanner } from "@/components/thread/pending-interactions/ThreadPendingInteractionBanner";
+import {
+  ExpiredPendingInteractionMessage,
+  ThreadPendingInteractionBanner,
+} from "@/components/thread/pending-interactions/ThreadPendingInteractionBanner";
 import {
   type PluginComposerHost,
   useComposerHostDraftNotifier,
@@ -165,6 +168,7 @@ interface ThreadDetailPromptAreaProps {
   pullRequestMergeMethod: PullRequestMergeMethod;
   isEnvironmentActionPending: boolean;
   pendingInteractions: readonly PendingInteraction[];
+  expiredInteraction: PendingInteraction | null;
   pendingInteractionsInitialLoading: boolean;
   queuedMessageCount: number;
   onChangedFileClick: (selection: WorkspaceChangedFileSelection) => void;
@@ -358,6 +362,7 @@ export function ThreadDetailPromptArea({
   pullRequestMergeMethod,
   isEnvironmentActionPending,
   pendingInteractions,
+  expiredInteraction,
   pendingInteractionsInitialLoading,
   queuedMessageCount,
   onChangedFileClick,
@@ -1676,6 +1681,11 @@ export function ThreadDetailPromptArea({
   );
 
   const pendingInteractionNode = useMemo(() => {
+    if (expiredInteraction !== null) {
+      return (
+        <ExpiredPendingInteractionMessage interaction={expiredInteraction} />
+      );
+    }
     if (!activePendingInteraction || shouldHideComposer) {
       return null;
     }
@@ -1685,7 +1695,12 @@ export function ThreadDetailPromptArea({
         threadId={thread.id}
       />
     );
-  }, [activePendingInteraction, shouldHideComposer, thread.id]);
+  }, [
+    activePendingInteraction,
+    expiredInteraction,
+    shouldHideComposer,
+    thread.id,
+  ]);
   const pendingInteractionStack = useMemo(
     () => (
       <>

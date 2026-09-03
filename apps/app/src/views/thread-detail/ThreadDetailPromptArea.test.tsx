@@ -697,6 +697,7 @@ interface RenderPromptAreaOptions {
   goal?: ThreadTimelineGoal | null;
   modelFallback?: ThreadTimelineModelFallback | null;
   pendingInteractions?: readonly PendingInteraction[];
+  expiredInteraction?: PendingInteraction | null;
   childPendingInteractions?: readonly ChildThreadPendingAttention[];
   pendingInteractionsInitialLoading?: boolean;
   queuedMessageCount?: number;
@@ -710,6 +711,7 @@ function buildPromptAreaElement({
   goal = null,
   modelFallback = null,
   pendingInteractions = [],
+  expiredInteraction = null,
   childPendingInteractions = [],
   pendingInteractionsInitialLoading = false,
   queuedMessageCount = 0,
@@ -734,6 +736,7 @@ function buildPromptAreaElement({
       onChangedFileClick={vi.fn()}
       parentThreadSection={null}
       pendingInteractions={pendingInteractions}
+      expiredInteraction={expiredInteraction}
       pendingInteractionsInitialLoading={pendingInteractionsInitialLoading}
       queuedMessageCount={queuedMessageCount}
       pendingTodos={null}

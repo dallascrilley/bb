@@ -222,6 +222,11 @@ type ThreadPendingInteractionsQueryKey = readonly [
   typeof THREAD_PENDING_INTERACTIONS_QUERY_KEY,
   string,
 ];
+type ThreadInteractionQueryKey = readonly [
+  typeof THREAD_PENDING_INTERACTIONS_QUERY_KEY,
+  string,
+  string,
+];
 export type TerminalQueryScope =
   | { kind: "thread"; threadId: string }
   | { kind: "environment"; environmentId: string }
@@ -726,6 +731,13 @@ export function threadPendingInteractionsQueryKey(
 
 export function allThreadPendingInteractionsQueryKeyPrefix(): ThreadPendingInteractionsQueryKeyPrefix {
   return [THREAD_PENDING_INTERACTIONS_QUERY_KEY];
+}
+
+export function threadInteractionQueryKey(
+  threadId: string,
+  interactionId: string,
+): ThreadInteractionQueryKey {
+  return [THREAD_PENDING_INTERACTIONS_QUERY_KEY, threadId, interactionId];
 }
 
 export function terminalsQueryKey(

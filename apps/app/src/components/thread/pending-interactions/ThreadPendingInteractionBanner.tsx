@@ -88,6 +88,21 @@ interface BuildApprovalSubjectInput {
   subject: ApprovalBannerSubject;
 }
 
+export function ExpiredPendingInteractionMessage({
+  interaction,
+}: Pick<ThreadPendingInteractionBannerProps, "interaction">) {
+  return (
+    <div data-interaction-id={interaction.id}>
+      <BannerShell title="This interaction expired.">
+        <p data-testid="expired-pending-interaction">
+          This pending interaction expired before it was answered. No action is
+          required.
+        </p>
+      </BannerShell>
+    </div>
+  );
+}
+
 export function ThreadPendingInteractionBanner({
   interaction,
   sourceThread,

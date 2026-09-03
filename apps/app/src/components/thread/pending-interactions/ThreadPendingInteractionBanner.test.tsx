@@ -16,7 +16,10 @@ import {
   setPluginLogoUrls,
 } from "@/lib/plugin-logos";
 import { resetAllCrashedPluginSlotsForTest } from "../../plugin/PluginSlotMount";
-import { ThreadPendingInteractionBanner } from "./ThreadPendingInteractionBanner";
+import {
+  ExpiredPendingInteractionMessage,
+  ThreadPendingInteractionBanner,
+} from "./ThreadPendingInteractionBanner";
 
 const mocks = vi.hoisted(() => ({
   resolveMutateAsync: vi.fn(async () => ({})),
@@ -158,6 +161,24 @@ afterEach(() => {
   resetAllCrashedPluginSlotsForTest();
   mocks.resolveMutateAsync.mockClear();
   mocks.stopMutateAsync.mockClear();
+});
+
+describe("ExpiredPendingInteractionMessage", () => {
+  it("renders BB's expiry state without decision controls or payload text", () => {
+    render(
+      <MemoryRouter>
+        <ExpiredPendingInteractionMessage interaction={pluginRequest} />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getByTestId("expired-pending-interaction").textContent,
+    ).toContain("expired before it was answered");
+    expect(
+      screen.queryByRole("button", { name: /allow|deny|answer/iu }),
+    ).toBeNull();
+    expect(screen.queryByText("Add secrets")).toBeNull();
+  });
 });
 
 describe("ThreadPendingInteractionBanner tool-use approval", () => {

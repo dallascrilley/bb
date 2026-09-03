@@ -26,12 +26,16 @@ import {
 
 const FIRST_PANE_ID = "pane-1";
 const SPLITTABLE_THREAD_ROUTE_PATH = "/projects/:projectId/threads/:threadId";
+const SPLITTABLE_THREAD_INTERACTION_ROUTE_PATH = `${SPLITTABLE_THREAD_ROUTE_PATH}/interactions/:interactionId`;
 
 export function threadPaneContent(thread: ThreadRoutePathArgs): PaneContent {
   return {
     kind: "thread",
     projectId: thread.projectId,
     threadId: thread.threadId,
+    ...(thread.interactionId === undefined
+      ? {}
+      : { interactionId: thread.interactionId }),
   };
 }
 
@@ -75,6 +79,22 @@ export function paneContentRoute(content: PaneContent): string {
 export function paneContentForPathname(pathname: string): PaneContent | null {
   if (pathname === APP_ROOT_ROUTE_PATH) {
     return { kind: "new-thread" };
+  }
+  const threadInteraction = matchPath(
+    { path: SPLITTABLE_THREAD_INTERACTION_ROUTE_PATH, end: false },
+    pathname,
+  );
+  if (
+    threadInteraction?.params.projectId &&
+    threadInteraction.params.threadId &&
+    threadInteraction.params.interactionId
+  ) {
+    return {
+      kind: "thread",
+      projectId: threadInteraction.params.projectId,
+      threadId: threadInteraction.params.threadId,
+      interactionId: threadInteraction.params.interactionId,
+    };
   }
   const thread = matchPath(
     { path: SPLITTABLE_THREAD_ROUTE_PATH, end: false },

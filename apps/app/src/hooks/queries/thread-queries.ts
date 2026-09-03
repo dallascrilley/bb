@@ -69,6 +69,7 @@ import {
   threadQueuedMessagesQueryKey,
   threadListQueryKey,
   threadPendingInteractionsQueryKey,
+  threadInteractionQueryKey,
   threadPromptHistoryQueryKey,
   threadQueryKey,
   threadSearchQueryKey,
@@ -754,6 +755,30 @@ export function useThreadPendingInteractions(
     refetchOnMount:
       options?.refetchOnMount ??
       ((query) => (query.getObserversCount() === 1 ? "always" : true)),
+    ...REALTIME_OWNED_NO_FOCUS_QUERY_POLICY,
+    ...(options?.staleTime === undefined
+      ? {}
+      : { staleTime: options.staleTime }),
+  });
+}
+
+export function useThreadInteraction(
+  threadId: string,
+  interactionId: string,
+  options?: QueryOptions,
+) {
+  const enabled =
+    (options?.enabled ?? true) && Boolean(threadId) && Boolean(interactionId);
+  return useQuery<PendingInteraction>({
+    queryKey: threadInteractionQueryKey(threadId, interactionId),
+    queryFn: ({ signal }) =>
+      sdk.threads.interactions.get({
+        threadId: requireThreadId(threadId, "useThreadInteraction"),
+        interactionId,
+        signal,
+      }),
+    enabled,
+    refetchOnMount: options?.refetchOnMount ?? "always",
     ...REALTIME_OWNED_NO_FOCUS_QUERY_POLICY,
     ...(options?.staleTime === undefined
       ? {}

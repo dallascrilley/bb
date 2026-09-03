@@ -73,7 +73,8 @@ export function findPaneByContent(
         return (
           candidate.kind === "thread" &&
           candidate.projectId === content.projectId &&
-          candidate.threadId === content.threadId
+          candidate.threadId === content.threadId &&
+          candidate.interactionId === content.interactionId
         );
       }
       if (content.kind === "plugin-detail") {

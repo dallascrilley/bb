@@ -42,6 +42,18 @@ describe("route path helpers", () => {
     ).toBe("/projects/proj_standard/threads/thr_standard");
   });
 
+  it("adds an exact pending interaction target without decision data", () => {
+    expect(
+      getThreadRoutePath({
+        projectId: "proj_standard",
+        threadId: "thr_standard",
+        interactionId: "pint_1234567890",
+      }),
+    ).toBe(
+      "/projects/proj_standard/threads/thr_standard/interactions/pint_1234567890",
+    );
+  });
+
   it("recognizes only the personal project id as projectless", () => {
     expect(isProjectlessProjectId(PERSONAL_PROJECT_ID)).toBe(true);
     expect(isProjectlessProjectId("proj_standard")).toBe(false);
@@ -52,6 +64,19 @@ describe("route path helpers", () => {
     expect(
       isRoutePath({
         path: "/projects/proj_standard/threads/thr_standard?panel=files#row-1",
+      }),
+    ).toBe(true);
+  });
+
+  it("recognizes exact pending interaction routes", () => {
+    expect(
+      isRoutePath({
+        path: "/threads/thr_personal/interactions/pint_1234567890",
+      }),
+    ).toBe(true);
+    expect(
+      isRoutePath({
+        path: "/projects/proj_standard/threads/thr_standard/interactions/pint_1234567890",
       }),
     ).toBe(true);
   });

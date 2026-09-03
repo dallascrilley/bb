@@ -3,6 +3,7 @@ export type PaneContent =
       kind: "thread";
       projectId: string;
       threadId: string;
+      interactionId?: string;
     }
   | {
       kind: "new-thread";

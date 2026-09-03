@@ -12,6 +12,7 @@ import {
   applyThreadPaneActionToLayout,
   createSinglePaneLayout,
   focusedPaneRoute,
+  paneContentForPathname,
   reconcileLayoutForContent,
 } from "./splitThreadNavigation";
 
@@ -41,6 +42,24 @@ function eightPaneLayout(): SplitLayout {
 }
 
 describe("mixed page navigation", () => {
+  it("keeps an exact interaction target when a thread pane is reconstructed", () => {
+    const target = {
+      projectId: "p1",
+      threadId: "thread-1",
+      interactionId: "pint_1234567890",
+    };
+    const route = focusedPaneRoute(createSinglePaneLayout(target));
+    if (route === null) throw new Error("Expected a thread route");
+
+    expect(route).toBe(
+      "/projects/p1/threads/thread-1/interactions/pint_1234567890",
+    );
+    expect(paneContentForPathname(route)).toEqual({
+      kind: "thread",
+      ...target,
+    });
+  });
+
   it("keeps New Thread as a singleton and focuses its existing pane", () => {
     const withCompose = splitPane(twoPaneLayout(), "pane-2", "bottom", {
       kind: "new-thread",

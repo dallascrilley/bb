@@ -73,12 +73,14 @@ import {
   useProjectThreadSubset,
   useThread,
   useThreadDetailBootstrap,
+  useThreadInteraction,
   useThreadPendingInteractions,
   useThreadQueuedMessages,
   type ProjectThreadSubsetFilters,
 } from "../../hooks/queries/thread-queries";
 import { isTransientReadError } from "@/hooks/queries/query-helpers";
 import { getPromptDraftAccessor } from "@/hooks/usePromptDraftStorage";
+import { useSecondTick } from "@/hooks/useSecondTick";
 import { subscribeComposerFocusRequests } from "@/lib/composer-focus-requests";
 import { ThreadGitActionDialog } from "@/components/dialogs/ThreadGitActionDialog";
 import { PageShell } from "@/components/ui/page-shell.js";
@@ -120,6 +122,10 @@ import {
 } from "@/components/workspace/workspace-change-summary";
 import { getThreadDisplayTitle } from "@/lib/thread-title";
 import { getMutationErrorMessage } from "@/lib/mutation-errors";
+import {
+  isExpiredPendingInteraction,
+  selectThreadPendingInteraction,
+} from "@/lib/thread-interaction-route";
 import {
   promptInputToDraft,
   type PromptDraftAttachment,
@@ -489,7 +495,7 @@ function ThreadDetailNotFound() {
 }
 
 function RoutedThreadDetailView() {
-  const { projectId, threadId } = useRouteState();
+  const { projectId, threadId, interactionId } = useRouteState();
 
   if (!projectId || !threadId) {
     return <ThreadDetailNotFound />;
@@ -497,7 +503,11 @@ function RoutedThreadDetailView() {
 
   return (
     <DefaultPaneContextProvider>
-      <ThreadDetailViewInternal projectId={projectId} threadId={threadId} />
+      <ThreadDetailViewInternal
+        projectId={projectId}
+        threadId={threadId}
+        interactionId={interactionId}
+      />
     </DefaultPaneContextProvider>
   );
 }
@@ -509,8 +519,10 @@ export function ThreadDetailView(props: ThreadDetailViewProps) {
   return <RoutedThreadDetailView />;
 }
 
-function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
-  const { projectId, threadId } = props;
+function ThreadDetailViewInternal(
+  props: ThreadRoutePathArgs & { interactionId?: string },
+) {
+  const { projectId, threadId, interactionId } = props;
   const { isFocused, navigateInPane, onRequestClose, isBoundedPane } =
     usePaneContext();
   const navigate = useNavigate();
@@ -629,14 +641,48 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
       enabled: threadQueryState.status === "ready" && Boolean(thread?.id),
     },
   );
+  const exactInteractionQuery = useThreadInteraction(
+    thread?.id ?? "",
+    interactionId ?? "",
+    {
+      enabled:
+        threadQueryState.status === "ready" &&
+        Boolean(thread?.id) &&
+        interactionId !== undefined,
+    },
+  );
   const pendingInteractions = pendingInteractionsQuery.data ?? [];
+  const selectedPendingInteraction = selectThreadPendingInteraction(
+    pendingInteractions,
+    interactionId,
+    exactInteractionQuery.data,
+  );
+  const now = useSecondTick();
+  const expiredInteraction =
+    selectedPendingInteraction !== null &&
+    isExpiredPendingInteraction(selectedPendingInteraction, now)
+      ? selectedPendingInteraction
+      : exactInteractionQuery.data !== undefined &&
+          isExpiredPendingInteraction(exactInteractionQuery.data, now)
+        ? exactInteractionQuery.data
+        : null;
+  const displayedPendingInteractions =
+    selectedPendingInteraction !== null && expiredInteraction === null
+      ? [selectedPendingInteraction]
+      : interactionId === undefined
+        ? pendingInteractions
+        : [];
   const pendingInteractionsInitialLoading =
-    isPendingInteractionStateUnknown(
-      pendingInteractionsQuery.data,
-      pendingInteractionsQuery.isFetching,
-    );
+    interactionId === undefined
+      ? isPendingInteractionStateUnknown(
+          pendingInteractionsQuery.data,
+          pendingInteractionsQuery.isFetching,
+        )
+      : selectedPendingInteraction === null &&
+        (pendingInteractionsQuery.isFetching ||
+          exactInteractionQuery.isFetching);
   const hasPendingInteraction =
-    getLatestPendingInteraction(pendingInteractions) !== null;
+    getLatestPendingInteraction(displayedPendingInteractions) !== null;
   const { data: queuedMessagesForEditEligibility = [] } =
     useThreadQueuedMessages(thread?.id ?? "", {
       enabled: threadQueryState.status === "ready" && Boolean(thread?.id),
@@ -2527,7 +2573,8 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
         systemConfigQuery.data?.generalSettings.steerActiveThreadOnEnter ??
         defaultAppSettings.steerActiveThreadOnEnter
       }
-      pendingInteractions={pendingInteractions}
+      pendingInteractions={displayedPendingInteractions}
+      expiredInteraction={expiredInteraction}
       pendingInteractionsInitialLoading={pendingInteractionsInitialLoading}
       queuedMessageCount={thread.queuedMessageCount}
       pendingTodos={pendingTodos}

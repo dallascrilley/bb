@@ -52,6 +52,19 @@ describe("resolveShellIncomingLink", () => {
     });
   });
 
+  it("preserves an exact pending interaction target in the page path", () => {
+    expect(
+      resolveShellIncomingLink(
+        "bb://threads/thr_1/interactions/pint_1234567890",
+        context,
+      ),
+    ).toEqual({
+      kind: "navigate",
+      path: "/webview?path=%2Fthreads%2Fthr_1%2Finteractions%2Fpint_1234567890",
+      profileId: null,
+    });
+  });
+
   it("keeps connect enrolment native", () => {
     expect(
       resolveShellIncomingLink("bb://connect?code=ABCD-EFGH", context),

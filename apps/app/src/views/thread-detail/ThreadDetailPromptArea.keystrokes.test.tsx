@@ -386,6 +386,7 @@ function buildPromptArea({
         onChangedFileClick={vi.fn()}
         parentThreadSection={null}
         pendingInteractions={pendingInteractions}
+        expiredInteraction={null}
         pendingInteractionsInitialLoading={false}
         queuedMessageCount={0}
         pendingTodos={null}

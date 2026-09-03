@@ -269,7 +269,7 @@ export function SplitThreadArea(props: SplitThreadAreaProps = {}) {
 }
 
 function SplitThreadAreaContent({ routeContent }: SplitThreadAreaProps) {
-  const { projectId, threadId } = useRouteState();
+  const { projectId, threadId, interactionId } = useRouteState();
   const splitWorkspaceActive = useSplitWorkspaceActive();
   const navigate = useNavigate();
   const store = useStore();
@@ -284,8 +284,15 @@ function SplitThreadAreaContent({ routeContent }: SplitThreadAreaProps) {
   );
 
   const routeThread = useMemo<ThreadRoutePathArgs | null>(
-    () => (projectId && threadId ? { projectId, threadId } : null),
-    [projectId, threadId],
+    () =>
+      projectId && threadId
+        ? {
+            projectId,
+            threadId,
+            ...(interactionId === undefined ? {} : { interactionId }),
+          }
+        : null,
+    [interactionId, projectId, threadId],
   );
   const currentContent = useMemo<PaneContent | null>(
     () => routeContent ?? (routeThread ? threadPaneContent(routeThread) : null),
@@ -300,9 +307,7 @@ function SplitThreadAreaContent({ routeContent }: SplitThreadAreaProps) {
       ? reconcileRestoredLayoutForContent
       : reconcileLayoutForContent;
     shouldReconcileRestoredLayout.current = false;
-    setLayout((previous) =>
-      reconcile(previous, currentContent),
-    );
+    setLayout((previous) => reconcile(previous, currentContent));
   }, [currentContent, setLayout]);
 
   const layout: SplitLayout | null =
@@ -963,6 +968,7 @@ function WorkspacePaneContent({
         surface="pane"
         projectId={content.projectId}
         threadId={content.threadId}
+        interactionId={content.interactionId}
       />
     </PaneContext.Provider>
   );

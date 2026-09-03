@@ -706,7 +706,8 @@ payload.apns` with `{"aps":{"alert":{…}},"body":{"kind":"turn-finished",
 "threadId":"…","projectId":"…","serverUrl":"https://…"}}`
   (expo-notifications reads remote `data` from the `body` key) after the user
   grants permission.
-- Deep links: `bb://<mobile path>` (`bb://threads/<id>`, `bb://settings/servers`,
+- Deep links: `bb://<mobile path>` (`bb://threads/<id>`,
+  `bb://threads/<id>/interactions/<interaction-id>`, `bb://settings/servers`,
   `bb://projects/<p>/threads/<t>`, …) and universal / app links
   `https://<handle>.getbb.app/{threads,projects,settings}/*` (iOS
   `associatedDomains: applinks:getbb.app, applinks:*.getbb.app`; Android

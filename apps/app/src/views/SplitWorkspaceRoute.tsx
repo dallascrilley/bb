@@ -23,7 +23,7 @@ const ToolsView = lazy(() =>
 
 export default function SplitWorkspaceRoute() {
   const location = useLocation();
-  const { projectId, threadId, isThreadView } = useRouteState();
+  const { projectId, threadId, interactionId, isThreadView } = useRouteState();
   const pluginMatch = matchPath(PLUGIN_PANEL_ROUTE_PATH, location.pathname);
   const pluginDetailMatch = matchPath(
     TOOLS_PLUGIN_DETAIL_ROUTE_PATH,
@@ -43,7 +43,12 @@ export default function SplitWorkspaceRoute() {
       return ROOT_COMPOSE_CONTENT;
     }
     if (isThreadView && projectId && threadId) {
-      return { kind: "thread", projectId, threadId };
+      return {
+        kind: "thread",
+        projectId,
+        threadId,
+        ...(interactionId === undefined ? {} : { interactionId }),
+      };
     }
     if (detailPluginId) {
       return { kind: "plugin-detail", pluginId: detailPluginId };
@@ -59,6 +64,7 @@ export default function SplitWorkspaceRoute() {
     return null;
   }, [
     detailPluginId,
+    interactionId,
     isThreadView,
     location.pathname,
     panelPath,
