@@ -25,6 +25,7 @@ import {
   type ThreadStatus,
 } from "@bb/domain";
 import type { AppDeps } from "../../types.js";
+import { ApiError } from "../../errors.js";
 import { toPendingInteraction } from "../interactions/pending-interaction-serialization.js";
 import { requirePublicThread } from "../lib/entity-lookup.js";
 import { stopThreadForCurrentState } from "../threads/thread-lifecycle.js";
@@ -43,6 +44,20 @@ function toSessionStatus(status: ThreadStatus): CockpitSessionStatus | null {
       return "error";
     case "pending":
       return null;
+  }
+}
+
+function requireCockpitThread(deps: AppDeps, sessionId: string) {
+  try {
+    return requirePublicThread(deps.db, sessionId);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      throw new CockpitControlError(
+        "expired",
+        "Session is no longer available for cockpit-control",
+      );
+    }
+    throw error;
   }
 }
 
@@ -186,7 +201,7 @@ export function createServerCockpitControl(deps: AppDeps): CockpitControl {
     receipts,
     listInventory: () => listInventory(deps),
     async pause(sessionId) {
-      const thread = requirePublicThread(deps.db, sessionId);
+      const thread = requireCockpitThread(deps, sessionId);
       const environment = resolveThreadHostCommandEnvironment({
         db: deps.db,
         thread,
@@ -194,10 +209,10 @@ export function createServerCockpitControl(deps: AppDeps): CockpitControl {
       await stopThreadForCurrentState(deps, thread, environment);
     },
     async resume(sessionId) {
-      requirePublicThread(deps.db, sessionId);
+      requireCockpitThread(deps, sessionId);
     },
     async steer(sessionId, message) {
-      const thread = requirePublicThread(deps.db, sessionId);
+      const thread = requireCockpitThread(deps, sessionId);
       const environment = thread.environmentId
         ? getEnvironment(deps.db, thread.environmentId)
         : null;
@@ -216,7 +231,7 @@ export function createServerCockpitControl(deps: AppDeps): CockpitControl {
       });
     },
     async takeOver(sessionId) {
-      const thread = requirePublicThread(deps.db, sessionId);
+      const thread = requireCockpitThread(deps, sessionId);
       const environment = resolveThreadHostCommandEnvironment({
         db: deps.db,
         thread,

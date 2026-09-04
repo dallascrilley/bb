@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { markThreadDeleted } from "@bb/db";
 import {
   cockpitDiscoverySchema,
   cockpitReceiptSchema,
@@ -156,6 +157,40 @@ describe("cockpit-control API", () => {
       );
       expect(humanGate.outcome).toBe("rejected");
       expect(humanGate.error?.code).toBe("human_gate");
+    });
+  });
+
+  it("rejects a deleted session as expired", async () => {
+    await withTestHarness(async (harness) => {
+      const { thread, host } = seedThreadFixture(harness, {
+        thread: { status: "active", title: "Gone soon" },
+      });
+      const discovery = cockpitDiscoverySchema.parse(
+        await readJson(await harness.app.request("/api/v1/cockpit")),
+      );
+      const ownerRef = discovery.sessions[0]?.ownerRef;
+      expect(ownerRef).toBeTruthy();
+      if (ownerRef === undefined) {
+        throw new Error("expected a discovered session");
+      }
+      markThreadDeleted(harness.db, harness.hub, { threadId: thread.id });
+      const receipt = cockpitReceiptSchema.parse(
+        await readJson(
+          await harness.app.request("/api/v1/cockpit/actions", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              ownerRef,
+              action: { kind: "pause" },
+              idempotencyKey: "deleted",
+              hostId: host.id,
+              confirmation: "none",
+            }),
+          }),
+        ),
+      );
+      expect(receipt.outcome).toBe("rejected");
+      expect(receipt.error?.code).toBe("expired");
     });
   });
 });
