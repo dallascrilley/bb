@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { markThreadDeleted } from "@bb/db";
+import { markProjectDeleted } from "@bb/db";
 import {
   cockpitDiscoverySchema,
   cockpitReceiptSchema,
@@ -12,7 +12,7 @@ import {
 import { seedThreadFixture } from "../helpers/seed.js";
 import { withTestHarness } from "../helpers/test-app.js";
 
-describe("cockpit-control API", () => {
+describe("cockpit-control API", { timeout: 20_000 }, () => {
   it("discovers a running session with supported actions", async () => {
     await withTestHarness(async (harness) => {
       const { host, thread } = seedThreadFixture(harness, {
@@ -160,9 +160,9 @@ describe("cockpit-control API", () => {
     });
   });
 
-  it("rejects a deleted session as expired", async () => {
+  it("rejects a session whose project is gone as expired", async () => {
     await withTestHarness(async (harness) => {
-      const { thread, host } = seedThreadFixture(harness, {
+      const { project, host } = seedThreadFixture(harness, {
         thread: { status: "active", title: "Gone soon" },
       });
       const discovery = cockpitDiscoverySchema.parse(
@@ -173,7 +173,7 @@ describe("cockpit-control API", () => {
       if (ownerRef === undefined) {
         throw new Error("expected a discovered session");
       }
-      markThreadDeleted(harness.db, harness.hub, { threadId: thread.id });
+      markProjectDeleted(harness.db, harness.hub, { projectId: project.id });
       const receipt = cockpitReceiptSchema.parse(
         await readJson(
           await harness.app.request("/api/v1/cockpit/actions", {

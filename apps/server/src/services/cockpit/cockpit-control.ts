@@ -47,9 +47,9 @@ function toSessionStatus(status: ThreadStatus): CockpitSessionStatus | null {
   }
 }
 
-function requireCockpitThread(deps: AppDeps, sessionId: string) {
+function requireCockpitThread(db: DbConnection, sessionId: string) {
   try {
-    return requirePublicThread(deps.db, sessionId);
+    return requirePublicThread(db, sessionId);
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {
       throw new CockpitControlError(
@@ -201,7 +201,7 @@ export function createServerCockpitControl(deps: AppDeps): CockpitControl {
     receipts,
     listInventory: () => listInventory(deps),
     async pause(sessionId) {
-      const thread = requireCockpitThread(deps, sessionId);
+      const thread = requireCockpitThread(deps.db, sessionId);
       const environment = resolveThreadHostCommandEnvironment({
         db: deps.db,
         thread,
@@ -209,10 +209,10 @@ export function createServerCockpitControl(deps: AppDeps): CockpitControl {
       await stopThreadForCurrentState(deps, thread, environment);
     },
     async resume(sessionId) {
-      requireCockpitThread(deps, sessionId);
+      requireCockpitThread(deps.db, sessionId);
     },
     async steer(sessionId, message) {
-      const thread = requireCockpitThread(deps, sessionId);
+      const thread = requireCockpitThread(deps.db, sessionId);
       const environment = thread.environmentId
         ? getEnvironment(deps.db, thread.environmentId)
         : null;
@@ -231,7 +231,7 @@ export function createServerCockpitControl(deps: AppDeps): CockpitControl {
       });
     },
     async takeOver(sessionId) {
-      const thread = requireCockpitThread(deps, sessionId);
+      const thread = requireCockpitThread(deps.db, sessionId);
       const environment = resolveThreadHostCommandEnvironment({
         db: deps.db,
         thread,
