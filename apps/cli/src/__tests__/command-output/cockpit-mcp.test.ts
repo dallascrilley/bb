@@ -16,6 +16,25 @@ function fakeSdk(overrides?: {
 }
 
 describe("bb cockpit mcp", () => {
+  it("rejects a non-string hostId on cockpit_discover", async () => {
+    const response = await handleCockpitMcpRequest(
+      {
+        jsonrpc: "2.0",
+        id: 3,
+        method: "tools/call",
+        params: {
+          name: "cockpit_discover",
+          arguments: { hostId: 1 },
+        },
+      },
+      fakeSdk(),
+    );
+    expect(response).toMatchObject({
+      id: 3,
+      error: { code: -32000 },
+    });
+  });
+
   it("lists cockpit_discover and cockpit_act", async () => {
     const response = await handleCockpitMcpRequest(
       { jsonrpc: "2.0", id: 1, method: "tools/list" },

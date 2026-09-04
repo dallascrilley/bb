@@ -124,15 +124,14 @@ export async function handleCockpitMcpRequest(
           : {};
       try {
         if (params.name === "cockpit_discover") {
-          const query = cockpitDiscoveryQuerySchema.parse({
-            hostId:
-              typeof args === "object" &&
+          const query = cockpitDiscoveryQuerySchema.parse(
+            typeof args === "object" &&
               args !== null &&
-              "hostId" in args &&
-              typeof args.hostId === "string"
-                ? args.hostId
-                : null,
-          });
+              !Array.isArray(args) &&
+              !("hostId" in args)
+              ? { hostId: null }
+              : args,
+          );
           return jsonRpcResult(
             id,
             toolResult(await sdk.cockpit.discover({ hostId: query.hostId })),

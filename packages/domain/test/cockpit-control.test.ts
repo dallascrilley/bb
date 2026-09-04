@@ -254,6 +254,27 @@ describe("cockpit-control contract", () => {
     expect(wrongHost.error?.code).toBe("wrong_host");
   });
 
+  it("does not consume the idempotency key when take_over still needs confirm", async () => {
+    const { control, effects } = createHarness();
+    const denied = await control.act(
+      request({
+        action: { kind: "take_over" },
+        idempotencyKey: "take-over-1",
+      }),
+    );
+    expect(denied.outcome).toBe("rejected");
+    expect(denied.error?.code).toBe("confirmation_required");
+    const confirmed = await control.act(
+      request({
+        action: { kind: "take_over" },
+        idempotencyKey: "take-over-1",
+        confirmation: "confirmed",
+      }),
+    );
+    expect(confirmed.outcome).toBe("accepted");
+    expect(effects).toEqual(["take_over:thr_running"]);
+  });
+
   it("keeps MFA and attestation as human gates", async () => {
     const { control, effects } = createHarness();
     const receipt = await control.act(

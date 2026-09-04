@@ -514,7 +514,16 @@ export function createCockpitControl(
     },
 
     async act(request) {
-      const existing = ports.receipts.get(request.idempotencyKey);
+      let existing: CockpitReceipt | null;
+      try {
+        existing = ports.receipts.get(request.idempotencyKey);
+      } catch (error) {
+        return rejectReceipt({
+          request,
+          ports,
+          error: toCockpitError(error),
+        });
+      }
       if (existing !== null) {
         if (receiptFingerprint(existing) !== actionFingerprint(request)) {
           return rejectReceipt({
@@ -551,7 +560,7 @@ export function createCockpitControl(
         policy.confirmationClass === "confirm" &&
         request.confirmation !== "confirmed"
       ) {
-        const receipt = rejectReceipt({
+        return rejectReceipt({
           request,
           ports,
           error: {
@@ -559,8 +568,6 @@ export function createCockpitControl(
             message: "Confirm take_over before executing it",
           },
         });
-        ports.receipts.put(request.idempotencyKey, receipt);
-        return receipt;
       }
 
       let decoded: CockpitOwnerRefPayload;

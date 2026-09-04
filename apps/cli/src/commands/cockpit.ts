@@ -41,9 +41,15 @@ function parseAction(opts: CockpitActOptions): CockpitAction {
       if (opts.answersJson === undefined) {
         throw new Error("answer requires --answers-json");
       }
+      let answers: unknown;
+      try {
+        answers = JSON.parse(opts.answersJson) as unknown;
+      } catch {
+        throw new Error("Invalid --answers-json. Expected a JSON object.");
+      }
       return cockpitActionSchema.parse({
         kind: "answer",
-        answers: JSON.parse(opts.answersJson) as unknown,
+        answers,
       });
     }
     case "pause":

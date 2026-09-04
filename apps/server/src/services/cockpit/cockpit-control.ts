@@ -31,10 +31,6 @@ import { stopThreadForCurrentState } from "../threads/thread-lifecycle.js";
 import { resolveThreadHostCommandEnvironment } from "../threads/thread-command-environment.js";
 import { acceptThreadSendRequest } from "../threads/thread-send-request.js";
 
-interface CockpitReceiptRow {
-  receipt_json: string;
-}
-
 function toSessionStatus(status: ThreadStatus): CockpitSessionStatus | null {
   switch (status) {
     case "starting":
@@ -95,11 +91,25 @@ export function createSqliteCockpitReceiptStore(
   );
   return {
     get(idempotencyKey) {
-      const row = select.get(idempotencyKey) as CockpitReceiptRow | undefined;
-      if (row === undefined) {
+      const row = select.get(idempotencyKey);
+      if (row === undefined || row === null || typeof row !== "object") {
         return null;
       }
-      return cockpitReceiptSchema.parse(JSON.parse(row.receipt_json));
+      const json =
+        "receipt_json" in row && typeof row.receipt_json === "string"
+          ? row.receipt_json
+          : null;
+      if (json === null) {
+        return null;
+      }
+      try {
+        return cockpitReceiptSchema.parse(JSON.parse(json));
+      } catch {
+        throw new CockpitControlError(
+          "invalid_request",
+          "Stored cockpit-control receipt is invalid",
+        );
+      }
     },
     put(idempotencyKey, receipt: CockpitReceipt) {
       upsert.run(idempotencyKey, JSON.stringify(receipt), receipt.createdAt);
@@ -126,10 +136,13 @@ function listInventory(deps: AppDeps): CockpitInventory {
       },
     ];
   });
-  const sessionIds = new Set(sessions.map((session) => session.id));
+  const sessionById = new Map(
+    sessions.map((session) => [session.id, session]),
+  );
   const attentionItems = listActivePendingInteractions(deps.db).flatMap(
     (row) => {
-      if (!sessionIds.has(row.threadId)) {
+      const thread = sessionById.get(row.threadId);
+      if (thread === undefined) {
         return [];
       }
       let payload: unknown;
@@ -149,10 +162,6 @@ function listInventory(deps: AppDeps): CockpitInventory {
             ? "question"
             : null;
       if (attentionKind === null) {
-        return [];
-      }
-      const thread = sessions.find((session) => session.id === row.threadId);
-      if (thread === undefined) {
         return [];
       }
       return [
