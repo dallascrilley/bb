@@ -1,0 +1,18 @@
+{
+  "evidenceKind": "sanitized-timeline-readback",
+  "threadId": "thr_98x25ybac2",
+  "turn": {
+    "turnId": "dabccec608-t1",
+    "status": "completed",
+    "sourceSeqStart": 1,
+    "sourceSeqEnd": 19
+  },
+  "maxSeq": 19,
+  "assistantMessage": {
+    "role": "assistant",
+    "sourceSeqStart": 11,
+    "sourceSeqEnd": 13,
+    "textOmitted": true
+  },
+  "payloadsOmitted": true
+}
