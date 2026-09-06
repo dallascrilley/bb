@@ -449,6 +449,8 @@
       "inputs": [
         "$TURBO_DEFAULT$",
         "$TURBO_ROOT$/package.json",
+        "$TURBO_ROOT$/scripts/validate-bb-resume-receipt.mjs",
+        "$TURBO_ROOT$/docs/receipts/wks-1536-2026-09-04/timeline.json",
         "$TURBO_ROOT$/vitest.shared.ts"
       ]
     },
