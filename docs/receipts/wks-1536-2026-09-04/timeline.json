@@ -1,0 +1,39 @@
+{
+  "evidenceKind": "sanitized-timeline-readback",
+  "threadId": "thr_98x25ybac2",
+  "turn": {
+    "turnId": "dabccec608-t1",
+    "status": "completed",
+    "sourceSeqStart": 1,
+    "sourceSeqEnd": 19
+  },
+  "maxSeq": 19,
+  "lifecycleCorrection": {
+    "interactionPending": {
+      "seq": 8,
+      "timestamp": "2026-09-04T19:01:02.777Z"
+    },
+    "turnCompleted": {
+      "seq": 17,
+      "timestamp": "2026-09-04T19:04:23.415Z"
+    },
+    "interactionResolving": {
+      "seq": 18,
+      "timestamp": "2026-09-04T19:44:57.227Z"
+    },
+    "interactionResolved": {
+      "seq": 19,
+      "timestamp": "2026-09-04T19:44:57.240Z"
+    },
+    "interactionResolvedAt": "2026-09-04T19:44:57.239Z"
+  },
+  "postAnswerExecutionObserved": false,
+  "postAnswerExecutionEvidence": "No post-answer execution event appears in the returned timeline; the turn completed before persisted interaction resolution.",
+  "assistantMessage": {
+    "role": "assistant",
+    "sourceSeqStart": 11,
+    "sourceSeqEnd": 13,
+    "textOmitted": true
+  },
+  "payloadsOmitted": true
+}
