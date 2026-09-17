@@ -34,4 +34,24 @@ describe("provider visibility raw events", () => {
       coverage: "normalized",
     });
   });
+
+  it("classifies Pi queue updates as covered noise", () => {
+    expect(
+      piVisibilityMetadata.describeRawEvent({
+        jsonrpc: "2.0",
+        method: "sdk/message",
+        params: {
+          threadId: "t1",
+          message: {
+            type: "queue_update",
+            steering: ["take the left path"],
+            followUp: [],
+          },
+        },
+      }),
+    ).toEqual({
+      kind: "sdk/queue_update",
+      coverage: "noise",
+    });
+  });
 });

@@ -39,6 +39,7 @@ type PiSdkEventType =
   | "message_end"
   | "message_start"
   | "message_update"
+  | "queue_update"
   | "tool_execution_end"
   | "tool_execution_start"
   | "tool_execution_update"
@@ -74,6 +75,7 @@ interface PiSimpleSdkRawEvent {
     | "message_end"
     | "message_start"
     | "message_update"
+    | "queue_update"
     | "tool_execution_start"
     | "unknown"
   >;
@@ -93,6 +95,10 @@ interface PiMessageUpdateRawEvent {
   kind: "sdk/message_update";
 }
 
+interface PiQueueUpdateRawEvent {
+  kind: "sdk/queue_update";
+}
+
 interface PiToolExecutionStartRawEvent {
   kind: "sdk/tool_execution_start";
 }
@@ -102,6 +108,7 @@ type PiRawEvent =
   | PiMessageBoundaryRawEvent
   | PiMessageUpdateRawEvent
   | PiNonSdkRawEvent
+  | PiQueueUpdateRawEvent
   | PiSimpleSdkRawEvent
   | PiThreadContextWindowUsageRawEvent
   | PiThreadIdentityRawEvent
@@ -123,6 +130,7 @@ function toPiSdkEventType(type: string | undefined): PiSdkEventType {
     case "message_end":
     case "message_start":
     case "message_update":
+    case "queue_update":
     case "tool_execution_end":
     case "tool_execution_start":
     case "tool_execution_update":
@@ -250,6 +258,9 @@ function parsePiRawEvent(event: JsonRpcMessage): PiRawEvent {
       };
     }
 
+    case "queue_update":
+      return { kind: "sdk/queue_update" };
+
     case "tool_execution_start":
       return { kind: "sdk/tool_execution_start" };
 
@@ -297,6 +308,9 @@ function describeParsedPiRawEvent(
 
     case "sdk/unknown":
       return { kind: "sdk/unknown", coverage: "unknown" };
+
+    case "sdk/queue_update":
+      return { kind: "sdk/queue_update", coverage: "noise" };
 
     case "sdk/simple":
       switch (event.sdkType) {
