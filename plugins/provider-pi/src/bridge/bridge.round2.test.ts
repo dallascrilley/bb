@@ -211,31 +211,19 @@ it("a steer's ack precedes the event pi wrote in the same chunk as the prompt re
   expect(steer.result).toMatchObject({ threadId });
   await harness.waitForDelta(threadId, (d) => d.kind === "turn.boundary");
   const deltas = harness.deltasOf(threadId);
-  const queued = deltas.findIndex(
-    (d) => queueUpdateSteering(d)?.includes("take the left path") === true,
-  );
   const accepted = deltas.findIndex(
     (d) =>
       d.kind === "input.accepted" && d.clientRequestId === "creq_cd23456789",
   );
-  const consumed = deltas.findIndex(
-    (d, index) => index > queued && queueUpdateSteering(d)?.length === 0,
+  const reply = deltas.findIndex(
+    (d) =>
+      d.kind === "item.textDelta" &&
+      String(d.text).includes("Steered: take the left path"),
   );
-  expect(queued).toBeGreaterThan(-1);
-  expect(accepted).toBeGreaterThan(queued);
-  expect(consumed).toBeGreaterThan(accepted);
+  expect(accepted).toBeGreaterThan(-1);
+  expect(reply).toBeGreaterThan(-1);
+  expect(accepted).toBeLessThan(reply);
 }, 90_000);
-
-function queueUpdateSteering(delta: Record<string, unknown>): unknown[] | null {
-  if (delta.kind !== "unhandled") return null;
-  const raw = delta.raw as
-    | { params?: { message?: { type?: unknown; steering?: unknown } } }
-    | undefined;
-  const message = raw?.params?.message;
-  if (message?.type !== "queue_update" || !Array.isArray(message.steering))
-    return null;
-  return message.steering;
-}
 
 it("a steer still queued when the run ends is reported dropped through the delivery barrier, not a timer", async () => {
   vi.stubEnv("FAKE_PI_DROP_STEER_AT_END", "1");

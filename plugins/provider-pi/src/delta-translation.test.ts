@@ -385,6 +385,25 @@ describe("pi delta translation equivalence", () => {
     ).toEqual([]);
   });
 
+  it("drops Pi queue updates without surfacing them as unhandled", () => {
+    const harness = createHarness();
+
+    expect(
+      harness.translate(
+        sdkMessage({
+          type: "queue_update",
+          steering: ["take the left path"],
+          followUp: [],
+        }),
+      ),
+    ).toEqual([]);
+    expect(
+      harness.translate(
+        sdkMessage({ type: "queue_update", steering: [], followUp: [] }),
+      ),
+    ).toEqual([]);
+  });
+
   it("agent_end surfaces Pi assistant stop errors as failed turns", () => {
     const harness = createHarness();
     const quotaMessage =
