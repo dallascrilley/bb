@@ -12,6 +12,7 @@ import {
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
+import { parse as parseYaml } from "yaml";
 import { z } from "zod";
 import { describe, expect, it } from "vitest";
 import {
@@ -131,14 +132,21 @@ const desktopPackageJsonSchema = z
   })
   .passthrough();
 
+// pnpm 11 reads these from pnpm-workspace.yaml and ignores package.json's
+// `pnpm` field entirely, so the workspace config is the only place the
+// declaration counts.
+const workspaceConfigSchema = z
+  .object({
+    supportedArchitectures: z.object({
+      cpu: z.array(z.string().min(1)),
+      os: z.array(z.string().min(1)),
+    }),
+  })
+  .passthrough();
+
 const workspacePackageJsonSchema = z
   .object({
-    pnpm: z.object({
-      supportedArchitectures: z.object({
-        cpu: z.array(z.string().min(1)),
-        os: z.array(z.string().min(1)),
-      }),
-    }),
+    pnpm: z.never().optional(),
   })
   .passthrough();
 
@@ -356,18 +364,21 @@ describe("electron-builder signing config", () => {
   });
 
   it("installs native plugin build packages for arm64 and x64", async () => {
-    const packageJsonText = await readFile(
-      resolve(desktopPackageRoot, "..", "..", "package.json"),
-      "utf8",
-    );
-    const packageJson = workspacePackageJsonSchema.parse(
-      JSON.parse(packageJsonText),
+    const workspaceRoot = resolve(desktopPackageRoot, "..", "..");
+    const workspaceConfig = workspaceConfigSchema.parse(
+      parseYaml(await readFile(resolve(workspaceRoot, "pnpm-workspace.yaml"), "utf8")),
     );
 
-    expect(packageJson.pnpm.supportedArchitectures).toEqual({
+    expect(workspaceConfig.supportedArchitectures).toEqual({
       cpu: ["arm64", "x64"],
       os: ["current"],
     });
+
+    // A copy left in the field pnpm stopped reading would be a second, ignored
+    // source of truth for the same setting.
+    workspacePackageJsonSchema.parse(
+      JSON.parse(await readFile(resolve(workspaceRoot, "package.json"), "utf8")),
+    );
   });
 
   it("disables in-place native rebuilds so the shared pnpm store is not mutated", async () => {
