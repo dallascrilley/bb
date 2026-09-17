@@ -252,9 +252,9 @@
     "grammarDrops": 0
   },
   "pi/compaction": {
-    "events": 38,
+    "events": 36,
     "rows": 3,
-    "unhandled": 2,
+    "unhandled": 0,
     "grammarDrops": 0
   },
   "pi/fork": {
@@ -276,9 +276,9 @@
     "grammarDrops": 0
   },
   "pi/steer": {
-    "events": 38,
+    "events": 36,
     "rows": 3,
-    "unhandled": 2,
+    "unhandled": 0,
     "grammarDrops": 0
   },
   "pi/stop-interrupt": {
